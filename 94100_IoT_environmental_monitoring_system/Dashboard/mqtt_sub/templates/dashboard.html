@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IoT Sensor Dashboard</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(120deg, #eef2f3, #d9e2ec);
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px;
+            color: #222;
+        }
+
+        .cards {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: yellow;
+            padding: 18px 30px;
+            border-radius: 14px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            font-size: 20px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            padding: 20px;
+        }
+
+        .chart-box {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        }
+
+        .chart-title {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #140202;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>ESP32 IoT Sensor Dashboard</h1>
+
+<!-- Live value cards -->
+<div class="cards">
+    <div class="card">🌡 Temp: <b><span id="temp">--</span> °C</b></div>
+    <div class="card">💧 Humidity: <b><span id="hum">--</span> %</b></div>
+    <div class="card">🔥 Gas: <b><span id="gas">--</span></b></div>
+</div>
+
+<!-- Charts -->
+<div class="dashboard">
+
+    <div class="chart-box">
+        <div class="chart-title">🌡 Temperature (°C)</div>
+        <canvas id="tempChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <div class="chart-title">💧 Humidity (%)</div>
+        <canvas id="humChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <div class="chart-title">🔥 Gas Level</div>
+        <canvas id="gasChart"></canvas>
+    </div>
+
+</div>
+
+<script>
+let tempChart, humChart, gasChart;
+
+function loadData() {
+    fetch("/data")
+        .then(res => res.json())
+        .then(data => {
+            if (data.length === 0) return;
+
+            const labels = data.map((_, i) => i + 1);
+            const temp = data.map(d => d.temperature);
+            const hum = data.map(d => d.humidity);
+            const gas = data.map(d => d.gas);
+
+            const last = data[data.length - 1];
+            document.getElementById("temp").innerText = last.temperature;
+            document.getElementById("hum").innerText = last.humidity;
+            document.getElementById("gas").innerText = last.gas;
+
+            // Temperature Chart
+            if (!tempChart) {
+                tempChart = new Chart(document.getElementById("tempChart"), {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: "Temperature",
+                            data: temp,
+                            borderColor: "#e74c3c",
+                            backgroundColor: "rgba(231,76,60,0.15)",
+                            fill: true
+                        }]
+                    },
+                    options: { animation: false }
+                });
+            } else {
+                tempChart.data.labels = labels;
+                tempChart.data.datasets[0].data = temp;
+                tempChart.update();
+            }
+
+            // Humidity Chart
+            if (!humChart) {
+                humChart = new Chart(document.getElementById("humChart"), {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: "Humidity",
+                            data: hum,
+                            borderColor: "#3498db",
+                            backgroundColor: "rgba(52,152,219,0.15)",
+                            fill: true
+                        }]
+                    },
+                    options: { animation: false }
+                });
+            } else {
+                humChart.data.labels = labels;
+                humChart.data.datasets[0].data = hum;
+                humChart.update();
+            }
+
+            // Gas Chart
+            if (!gasChart) {
+                gasChart = new Chart(document.getElementById("gasChart"), {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: "Gas",
+                            data: gas,
+                            borderColor: "#2ecc71",
+                            backgroundColor: "rgba(46,204,113,0.15)",
+                            fill: true
+                        }]
+                    },
+                    options: { animation: false }
+                });
+            } else {
+                gasChart.data.labels = labels;
+                gasChart.data.datasets[0].data = gas;
+                gasChart.update();
+            }
+        });
+}
+
+loadData();
+setInterval(loadData, 5000);
+</script>
+
+</body>
+</html>
